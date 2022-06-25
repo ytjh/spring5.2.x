@@ -921,7 +921,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	//---------------------------------------------------------------------
 	// Implementation of BeanDefinitionRegistry interface
 	//---------------------------------------------------------------------
-
+	/**
+	 *1.对AbstractBeanDefinition 的校验，在解析xml文件的时候我们提过校验，但是此校验非彼校验，之前的校验是针对于xml格式的校验，
+	 * 而此时的校验是针对于AbstractBeanDefinition的methodOverrides属性的
+	 * 2.对beanname已经注册的情况的处理。如果设置了不允许bean的覆盖，则需要抛出异常，否则直接覆盖
+	 * 3.加入map
+	 * 4.清除解析之前留下的对应beanname的缓存
+	 */
 	@Override
 	public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
 			throws BeanDefinitionStoreException {
@@ -930,7 +936,14 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
 
 		if (beanDefinition instanceof AbstractBeanDefinition) {
+			//注册前的最后一个校验，这里的检验不同与之前的xml文件校验，主要是对应AbstractBeanDefinition属性的methodOverrides校验
+			// 检验methodOverrides是否与工厂方法并存或者methodOverrides对应的方法根本不存在
 			try {
+				/**
+				 * 注册前的最后一次校验，这里的校验不同于之前的xml文件校验
+				 * 主要是对于AbstractDeanDefinition 属性中的methodOverrides校验
+				 * 校验methodOverrides 是否与工厂方法并存或者methodOverrides对应的方法根本不存在
+				 */
 				((AbstractBeanDefinition) beanDefinition).validate();
 			}
 			catch (BeanDefinitionValidationException ex) {
@@ -938,9 +951,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 						"Validation of bean definition failed", ex);
 			}
 		}
-
+		//因为beanDefinitionMap 是全局变量，这里定会存在并发访问的情况 所以使用的 ConcurrentHashMap
 		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
+		//处理注册已经注册的beanname情况
 		if (existingDefinition != null) {
+			// 如果对应的beanname已经注册并且配置中配置了bean不允许覆盖，则抛出异常
 			if (!isAllowBeanDefinitionOverriding()) {
 				throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
 			}
