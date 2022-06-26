@@ -997,7 +997,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 			else {
 				// Still in startup registration phase
+				//注册beanDefinition
 				this.beanDefinitionMap.put(beanName, beanDefinition);
+				//记录beanname
 				this.beanDefinitionNames.add(beanName);
 				removeManualSingletonName(beanName);
 			}
@@ -1005,6 +1007,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		if (existingDefinition != null || containsSingleton(beanName)) {
+			//重置beanname
 			resetBeanDefinition(beanName);
 		}
 		else if (isConfigurationFrozen()) {
